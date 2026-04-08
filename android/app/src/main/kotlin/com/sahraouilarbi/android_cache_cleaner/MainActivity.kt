@@ -1,4 +1,4 @@
-package com.example.android_cache_cleaner
+package com.sahraouilarbi.android_cache_cleaner
 
 import android.app.AppOpsManager
 import android.app.usage.StorageStatsManager
@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.example.cacheflow/native"
+    private val CHANNEL = "com.sahraouilarbi.cacheflow/native"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

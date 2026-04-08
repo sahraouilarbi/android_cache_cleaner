@@ -3,7 +3,7 @@ import 'package:injectable/injectable.dart';
 
 @lazySingleton
 class NativeChannel {
-  final MethodChannel channel = const MethodChannel('com.example.cacheflow/native');
+  final MethodChannel channel = const MethodChannel('com.sahraouilarbi.cacheflow/native');
 
   Future<List<Map<String, dynamic>>> getAppStats() async {
     try {

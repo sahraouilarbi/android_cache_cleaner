@@ -1,4 +1,4 @@
-package com.example.android_cache_cleaner
+package com.sahraouilarbi.android_cache_cleaner
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
@@ -28,7 +28,7 @@ class CacheAccessibilityService : AccessibilityService() {
             if (packageQueue.isEmpty()) {
                 isCleaning = false
                 // Relancer l'application une fois le nettoyage terminé
-                val intent = instance?.packageManager?.getLaunchIntentForPackage("com.example.android_cache_cleaner")
+                val intent = instance?.packageManager?.getLaunchIntentForPackage("com.sahraouilarbi.android_cache_cleaner")
                 intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 instance?.startActivity(intent)
                 return
