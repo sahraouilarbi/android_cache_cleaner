@@ -1,0 +1,3 @@
+<resources>
+    <string name="accessibility_service_description">CacheFlow requires Accessibility Service to automate clearing cache from app settings. It simulates clicks to safely remove cache data without requiring Root access.</string>
+</resources>
