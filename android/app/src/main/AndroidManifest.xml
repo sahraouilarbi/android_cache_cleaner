@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
 
     <application
-        android:label="android_cache_cleaner"
+        android:label="CacheFlow"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
