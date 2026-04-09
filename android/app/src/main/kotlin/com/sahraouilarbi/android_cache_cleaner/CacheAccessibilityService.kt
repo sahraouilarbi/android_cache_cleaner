@@ -1,18 +1,27 @@
 package com.sahraouilarbi.android_cache_cleaner
 
 import android.accessibilityservice.AccessibilityService
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.app.NotificationCompat
 
 class CacheAccessibilityService : AccessibilityService() {
 
     companion object {
+        private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "cacheflow_cleaning_channel"
+        
         var instance: CacheAccessibilityService? = null
         private val packageQueue = mutableListOf<String>()
         var isCleaning = false
@@ -21,12 +30,14 @@ class CacheAccessibilityService : AccessibilityService() {
             packageQueue.clear()
             packageQueue.addAll(packages)
             isCleaning = true
+            instance?.showNotification()
             processNext()
         }
 
         private fun processNext() {
             if (packageQueue.isEmpty()) {
                 isCleaning = false
+                instance?.stopForeground(true)
                 // Relancer l'application une fois le nettoyage terminé
                 val intent = instance?.packageManager?.getLaunchIntentForPackage("com.sahraouilarbi.android_cache_cleaner")
                 intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -43,6 +54,7 @@ class CacheAccessibilityService : AccessibilityService() {
         }
     }
 
+    private val ALLOWED_PACKAGES = setOf("com.android.settings", "com.google.android.settings")
     private var isNavigating = false
     private var lastEventTime = 0L
     private val handler = Handler(Looper.getMainLooper())
@@ -50,6 +62,7 @@ class CacheAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        createNotificationChannel()
         Log.d("CacheFlowAccessibility", "Accessibility Service Connected")
     }
 
@@ -59,7 +72,22 @@ class CacheAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        // SECURITY: Prohibit logging of any accessibility event content (event.text, etc.)
+        // to prevent exfiltration of sensitive user data.
+        
         if (!isCleaning || event == null || isNavigating) return
+        
+        // SECURITY: Strict package whitelist to prevent the service from interacting
+        // with apps other than the system settings.
+        val eventPackage = event.packageName?.toString()
+        if (eventPackage !in ALLOWED_PACKAGES) return
+
+        // SECURITY: Filter event types to the bare minimum required for automation.
+        val allowedEventTypes = setOf(
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+        )
+        if (event.eventType !in allowedEventTypes) return
         
         val currentTime = System.currentTimeMillis()
         if (lastEventTime == 0L) lastEventTime = currentTime
@@ -158,5 +186,32 @@ class CacheAccessibilityService : AccessibilityService() {
         Log.d("CacheFlowAccessibility", "Service Interrupted")
         isCleaning = false
         isNavigating = false
+        stopForeground(true)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "CacheFlow Cleaning"
+            val descriptionText = "Notification displayed during automated cleaning"
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showNotification() {
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("CacheFlow")
+            .setContentText("Nettoyage automatique en cours...")
+            .setSmallIcon(android.R.drawable.ic_menu_delete) // Temporary icon
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .build()
+        
+        startForeground(NOTIFICATION_ID, notification)
     }
 }

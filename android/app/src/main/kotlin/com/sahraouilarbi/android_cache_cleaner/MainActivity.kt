@@ -24,55 +24,94 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.io.File
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.sahraouilarbi.cacheflow/native"
+    // SECURITY: Strict regex to validate Android package names
+    private val PACKAGE_NAME_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$")
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "getAppStats" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        if (hasUsageStatsPermission()) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val stats = getAppStats()
-                                withContext(Dispatchers.Main) {
-                                    result.success(stats)
+            try {
+                when (call.method) {
+                    "getAppStats" -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            if (hasUsageStatsPermission()) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        val stats = getAppStats()
+                                        withContext(Dispatchers.Main) {
+                                            result.success(stats)
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            result.error("STORAGE_STATS_ERROR", "Could not retrieve app stats", null)
+                                        }
+                                    }
                                 }
+                            } else {
+                                startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                result.error("PERMISSION_DENIED", "Usage stats permission required", null)
                             }
                         } else {
-                            // Prompt for permission
-                            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                            result.error("PERMISSION_DENIED", "Usage stats permission required", null)
+                            result.error("UNSUPPORTED_OS", "Requires Android O or higher", null)
                         }
-                    } else {
-                        result.error("UNSUPPORTED_OS", "Requires Android O or higher", null)
+                    }
+                    "clearCache" -> {
+                        val packages = call.argument<List<String>>("packages")
+                        if (packages == null || packages.isEmpty()) {
+                            result.error("INVALID_ARGUMENT", "Package list is required", null)
+                            return@setMethodCallHandler
+                        }
+                        
+                        // SECURITY: Validate each package name before passing to root shell
+                        for (pkg in packages) {
+                            if (!PACKAGE_NAME_REGEX.matches(pkg)) {
+                                result.error("SECURITY_ERROR", "Invalid package name format detected", null)
+                                return@setMethodCallHandler
+                            }
+                        }
+
+                        result.success(clearCacheRoot(packages))
+                    }
+                    "isAccessibilityServiceEnabled" -> {
+                        result.success(isAccessibilityEnabled())
+                    }
+                    "requestAccessibilityService" -> {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        result.success(null)
+                    }
+                    "triggerAccessibilityCleaning" -> {
+                        val packages = call.argument<List<String>>("packages")
+                        if (packages == null || packages.isEmpty()) {
+                            result.error("INVALID_ARGUMENT", "Package list is required", null)
+                            return@setMethodCallHandler
+                        }
+
+                        // SECURITY: Validate package names for accessibility queue as well
+                        for (pkg in packages) {
+                            if (!PACKAGE_NAME_REGEX.matches(pkg)) {
+                                result.error("SECURITY_ERROR", "Invalid package name format", null)
+                                return@setMethodCallHandler
+                            }
+                        }
+
+                        if (isAccessibilityEnabled()) {
+                            CacheAccessibilityService.startCleaning(packages)
+                            result.success(true)
+                        } else {
+                            result.success(false)
+                        }
+                    }
+                    else -> {
+                        result.notImplemented()
                     }
                 }
-                "clearCache" -> {
-                    val packages = call.argument<List<String>>("packages") ?: emptyList()
-                    result.success(clearCacheRoot(packages))
-                }
-                "isAccessibilityServiceEnabled" -> {
-                    result.success(isAccessibilityEnabled())
-                }
-                "requestAccessibilityService" -> {
-                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    result.success(null)
-                }
-                "triggerAccessibilityCleaning" -> {
-                    val packages = call.argument<List<String>>("packages") ?: emptyList()
-                    if (isAccessibilityEnabled()) {
-                        CacheAccessibilityService.startCleaning(packages)
-                        result.success(true)
-                    } else {
-                        result.success(false)
-                    }
-                }
-                else -> {
-                    result.notImplemented()
-                }
+            } catch (e: Exception) {
+                // SECURITY: Catch all exceptions to prevent internal info leakage
+                result.error("UNEXPECTED_ERROR", "An unexpected error occurred in native code", null)
             }
         }
     }
@@ -175,13 +214,23 @@ class MainActivity: FlutterActivity() {
             val process = Runtime.getRuntime().exec("su")
             val os = DataOutputStream(process.outputStream)
             for (pkg in packages) {
-                os.writeBytes("rm -rf /data/user/0/$pkg/cache/*\n")
+                // SECURITY: Use File API to resolve canonical path and prevent path traversal
+                val cacheDir = File("/data/user/0/$pkg/cache")
+                val resolvedPath = cacheDir.canonicalPath
+                
+                // Verify path is within expected sandbox scope
+                if (resolvedPath.startsWith("/data/user/0/$pkg/")) {
+                    os.writeBytes("rm -rf $resolvedPath/*\n")
+                } else {
+                    Log.e("CacheFlow", "Blocked suspicious path traversal attempt: $resolvedPath")
+                }
             }
             os.writeBytes("exit\n")
             os.flush()
             process.waitFor()
             return process.exitValue() == 0
         } catch (e: Exception) {
+            Log.e("CacheFlow", "Root cleaning failed: ${e.message}")
             return false
         }
     }
