@@ -1,9 +1,7 @@
 # CacheFlow (Android Cache Cleaner)
 
 <div align="center">
-  <img src="nanobanana-output/a_professional_minimalist_androi.png" alt="CacheFlow App Icon" width="150" style="border-radius: 20%;" />
-  <br><br>
-  <img src="nanobanana-output/a_horizontal_brand_logo_for_cach.png" alt="CacheFlow Logo" width="400" />
+  <img src="assets/images/cacheflow.png" alt="CacheFlow App Icon" width="150" style="border-radius: 20%;" />
   <br><br>
   
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -24,26 +22,28 @@ L'objectif de CacheFlow est de redonner le contrôle aux utilisateurs sur leur s
 
 ## ✨ Fonctionnalités Clés
 
-- **🔍 Analyse du Stockage (F1) :** Liste complète des applications avec détails (Cache, Données, APK) via `StorageStatsManager`.
-- **🤖 Automatisation (F2) :** Nettoyage intelligent sans répétition manuelle pour les utilisateurs non-root.
-- **⚡ Performance (F3) :** Support du mode Root pour un nettoyage en un clic.
-- **🎨 Design Material 3 (F4) :** Interface moderne, support du mode sombre, et visualisations graphiques.
+- **🔍 Analyse du Stockage :** Liste complète des applications avec détails (Cache, Données, APK) via `StorageStatsManager`.
+- **🤖 Automatisation :** Nettoyage intelligent sans répétition manuelle pour les utilisateurs non-root.
+- **⚡ Performance :** Support du mode Root pour un nettoyage en un clic.
+- **🎨 Design Material 3 :** Interface moderne, support natif des thèmes **Clair et Sombre**.
+- **🌍 Multilingue :** Support complet du **Français**, **Anglais** et **Arabe** (incluant le support RTL).
 
 ## 🛠 Architecture & Stack Technique
 
 Le projet suit rigoureusement la **Clean Architecture** :
 
 - **Framework :** Flutter 3.x (Dart)
-- **State Management :** BLoC / Cubit
+- **State Management :** BLoC
 - **DI :** GetIt & Injectable
-- **Persistence :** Isar Database
-- **Bridge :** Kotlin MethodChannels pour les API système.
+- **Localisation :** arb files with flutter_localizations
+- **Bridge :** Kotlin MethodChannels pour les API système (`StorageStatsManager`, `AccessibilityService`).
 
 ```text
 lib/
 ├── core/              # Utilitaires, thèmes, injection
 ├── data/              # DTOs, Repositories implementations
 ├── domain/            # Entities, Usecases, Repository interfaces
+├── l10n/              # Fichiers de traduction (ARB)
 └── presentation/      # BLoCs, Pages, Widgets
 ```
 
@@ -57,17 +57,25 @@ lib/
 
 1. **Cloner le projet :**
    ```bash
-   git clone https://github.com/votre-username/android_cache_cleaner.git
+   git clone https://github.com/sahraouilarbi/android_cache_cleaner.git
    ```
 2. **Setup Flutter :**
    ```bash
    flutter pub get
    dart run build_runner build --delete-conflicting-outputs
+   flutter gen-l10n
    ```
 3. **Lancer :**
    ```bash
    flutter run
    ```
+
+## 🧪 Tests
+
+Le projet inclut une suite de tests unitaires et de widgets pour garantir la stabilité :
+```bash
+flutter test
+```
 
 ## 🤝 Contribution
 
