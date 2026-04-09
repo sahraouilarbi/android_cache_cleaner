@@ -28,6 +28,28 @@ L'objectif de CacheFlow est de redonner le contrôle aux utilisateurs sur leur s
 - **🎨 Design Material 3 :** Interface moderne, support natif des thèmes **Clair et Sombre**.
 - **🌍 Multilingue :** Support complet du **Français**, **Anglais** et **Arabe** (incluant le support RTL).
 
+## 📖 Guide d'Utilisation
+
+### 1. Autoriser l'accès aux statistiques
+Au premier lancement, l'application vous demandera l'autorisation **"Accès aux données d'utilisation"**. Elle est indispensable pour calculer la taille réelle du cache de chaque application.
+- Cliquez sur "Autoriser" dans la boîte de dialogue.
+- Cherchez **CacheFlow** dans la liste des paramètres Android qui s'affiche.
+- Activez l'option **"Autoriser l'accès aux données d'utilisation"**.
+
+### 2. Activer le Service d'Accessibilité (Mode Non-Root)
+Pour automatiser le nettoyage sans accès Root, CacheFlow a besoin de simuler des clics dans les menus système.
+- Cliquez sur le bouton **"Nettoyer tout le cache"** sur le tableau de bord.
+- Si le service n'est pas actif, vous serez redirigé vers les paramètres d'**Accessibilité**.
+- Allez dans **"Applications installées"** (ou "Services téléchargés").
+- Sélectionnez **CacheFlow** et activez l'interrupteur.
+- Acceptez l'avertissement système (CacheFlow n'utilise cette permission *que* pour cliquer sur le bouton "Vider le cache").
+
+### 3. Lancer le nettoyage
+Une fois les permissions accordées :
+- Cliquez sur le bouton flottant **"Nettoyer tout le cache"**.
+- L'application va alors parcourir automatiquement la liste des applications.
+- Laissez votre téléphone travailler quelques secondes. Il reviendra sur CacheFlow une fois terminé.
+
 ## 🛠 Architecture & Stack Technique
 
 Le projet suit rigoureusement la **Clean Architecture** :
