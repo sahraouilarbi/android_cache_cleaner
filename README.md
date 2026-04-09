@@ -1,78 +1,86 @@
 # CacheFlow (Android Cache Cleaner)
 
-![CacheFlow Logo](nanobanana-output/a_horizontal_logo_design_for_cac.png)
+<div align="center">
+  <img src="nanobanana-output/a_professional_minimalist_androi.png" alt="CacheFlow App Icon" width="150" style="border-radius: 20%;" />
+  <br><br>
+  <img src="nanobanana-output/a_horizontal_brand_logo_for_cach.png" alt="CacheFlow Logo" width="400" />
+  <br><br>
+  
+  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+  [![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white)](https://flutter.dev)
+  [![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)](https://www.android.com)
+  [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
+</div>
 
-CacheFlow est une application utilitaire Android moderne développée avec Flutter, conçue pour analyser intelligemment l'utilisation du stockage et automatiser le nettoyage des caches des applications tierces.
+CacheFlow est une application utilitaire Android moderne et **Open-Source** développée avec Flutter. Elle est conçue pour analyser intelligemment l'utilisation du stockage et automatiser le nettoyage des caches des applications tierces, offrant une expérience fluide et transparente.
+
+> *Note : L'identifiant de package officiel est `com.sahraouilarbi.android_cache_cleaner`.*
 
 ## 🚀 Vision du Projet
 
-L'objectif de CacheFlow est d'offrir une solution simple et efficace pour libérer de l'espace de stockage sur Android, en supportant deux modes de fonctionnement :
-- **Mode Non-Root :** Automatisation du nettoyage via les **Services d'Accessibilité**.
-- **Mode Root :** Nettoyage direct via des commandes shell pour une efficacité maximale.
+L'objectif de CacheFlow est de redonner le contrôle aux utilisateurs sur leur stockage Android via une solution éthique, sans trackers et performante :
+- **Mode Non-Root :** Automatisation du nettoyage via les **Services d'Accessibilité** (simule les clics utilisateur).
+- **Mode Root :** Nettoyage direct et instantané via des commandes shell `su`.
 
 ## ✨ Fonctionnalités Clés
 
-- **🔍 Analyse du Stockage (F1) :** Liste complète des applications installées avec récupération précise des tailles de cache, de données et de l'APK via `StorageStatsManager`.
-- **🤖 Mode Accessibilité (F2) :** Automatisation du parcours des paramètres système pour vider le cache des applications sélectionnées sans intervention manuelle répétitive.
-- **⚡ Mode Root (F3) :** Nettoyage instantané des répertoires `/cache` et `/data/user/0/*/cache` pour les utilisateurs avancés.
-- **🎨 Interface Material 3 (F4) :** Dashboard intuitif avec visualisation graphique des statistiques de stockage et bouton "Nettoyage Rapide".
+- **🔍 Analyse du Stockage (F1) :** Liste complète des applications avec détails (Cache, Données, APK) via `StorageStatsManager`.
+- **🤖 Automatisation (F2) :** Nettoyage intelligent sans répétition manuelle pour les utilisateurs non-root.
+- **⚡ Performance (F3) :** Support du mode Root pour un nettoyage en un clic.
+- **🎨 Design Material 3 (F4) :** Interface moderne, support du mode sombre, et visualisations graphiques.
 
 ## 🛠 Architecture & Stack Technique
 
-Le projet respecte les principes de la **Clean Architecture** pour garantir une base de code robuste et testable :
+Le projet suit rigoureusement la **Clean Architecture** :
 
-- **Framework :** Flutter 3.x
-- **Architecture :** Clean Architecture (Data, Domain, Presentation)
-- **Gestion d'État :** [BLoC](https://pub.dev/packages/flutter_bloc)
-- **Injection de Dépendances :** [GetIt](https://pub.dev/packages/get_it) & [Injectable](https://pub.dev/packages/injectable)
-- **Base de Données Locale :** Isar
-- **Bridge Natif :** MethodChannels (Dart <-> Kotlin) pour l'interaction avec les API système Android.
-
-### Structure du Projet
+- **Framework :** Flutter 3.x (Dart)
+- **State Management :** BLoC / Cubit
+- **DI :** GetIt & Injectable
+- **Persistence :** Isar Database
+- **Bridge :** Kotlin MethodChannels pour les API système.
 
 ```text
 lib/
-├── core/              # Utilitaires, constantes, thèmes
-├── data/              # Implémentations (Sources de données, Models, Repositories)
-├── domain/            # Logique métier pure (Entities, Usecases, Interfaces)
-└── presentation/      # UI (BLoC, Pages, Widgets)
+├── core/              # Utilitaires, thèmes, injection
+├── data/              # DTOs, Repositories implementations
+├── domain/            # Entities, Usecases, Repository interfaces
+└── presentation/      # BLoCs, Pages, Widgets
 ```
 
-## 🔐 Permissions Requises
+## 🔐 Permissions Android
 
-Pour fonctionner correctement, CacheFlow nécessite les autorisations suivantes :
-- `PACKAGE_USAGE_STATS` : Pour accéder aux statistiques de stockage des applications.
-- `QUERY_ALL_PACKAGES` : Pour lister les applications installées (Android 11+).
-- `BIND_ACCESSIBILITY_SERVICE` : Pour automatiser le nettoyage en mode non-root.
+- `PACKAGE_USAGE_STATS` : Analyse du stockage.
+- `QUERY_ALL_PACKAGES` : Liste des applications (Android 11+).
+- `BIND_ACCESSIBILITY_SERVICE` : Automatisation du nettoyage.
 
-## ⚙️ Installation & Configuration
+## ⚙️ Installation
 
-### Prérequis
-- Flutter SDK (3.x ou plus)
-- Android Studio / Android SDK
-- Un appareil Android (physique ou émulateur)
-
-### Étapes
 1. **Cloner le projet :**
    ```bash
-   git clone <url-du-repo>
-   cd android_cache_cleaner
+   git clone https://github.com/votre-username/android_cache_cleaner.git
    ```
-
-2. **Installer les dépendances :**
+2. **Setup Flutter :**
    ```bash
    flutter pub get
-   ```
-
-3. **Générer le code (Injectable/Isar) :**
-   ```bash
    dart run build_runner build --delete-conflicting-outputs
    ```
-
-4. **Lancer l'application :**
+3. **Lancer :**
    ```bash
    flutter run
    ```
 
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! Que ce soit pour signaler un bug, proposer une fonctionnalité ou améliorer le code :
+1. Forkez le projet.
+2. Créez votre branche (`git checkout -b feature/AmazingFeature`).
+3. Committez vos changements (`git commit -m 'Add AmazingFeature'`).
+4. Pushez sur la branche (`git push origin feature/AmazingFeature`).
+5. Ouvrez une Pull Request.
+
+## 📄 Licence
+
+Distribué sous la licence **GNU GPL v3**. Voir le fichier `LICENSE` pour plus d'informations.
+
 ---
-*Développé avec ❤️ pour une expérience Android plus fluide.*
+*Fait avec ❤️ par Larbi Sahraoui. CacheFlow est un logiciel libre.*

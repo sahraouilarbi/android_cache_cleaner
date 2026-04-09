@@ -1,9 +1,8 @@
+import 'package:android_cache_cleaner/data/datasources/native_channel.dart';
+import 'package:android_cache_cleaner/domain/entities/app_storage_stats.dart';
+import 'package:android_cache_cleaner/domain/repositories/i_storage_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
-
-import '../../domain/entities/app_storage_stats.dart';
-import '../../domain/repositories/i_storage_repository.dart';
-import '../datasources/native_channel.dart';
 
 @Injectable(as: IStorageRepository)
 class StorageRepositoryImpl implements IStorageRepository {
@@ -14,12 +13,14 @@ class StorageRepositoryImpl implements IStorageRepository {
   @override
   Future<List<AppStorageStats>> getAppsStorageStats() async {
     final rawStats = await _nativeChannel.getAppStats();
-    
+
     // Process mapping in an isolate to avoid blocking the main thread
     return await compute(_mapToEntities, rawStats);
   }
 
-  static List<AppStorageStats> _mapToEntities(List<Map<String, dynamic>> rawList) {
+  static List<AppStorageStats> _mapToEntities(
+    List<Map<String, dynamic>> rawList,
+  ) {
     return rawList.map((map) {
       return AppStorageStats(
         packageName: map['packageName'] as String? ?? '',

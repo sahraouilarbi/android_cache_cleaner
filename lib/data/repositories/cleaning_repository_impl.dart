@@ -1,7 +1,6 @@
+import 'package:android_cache_cleaner/data/datasources/native_channel.dart';
+import 'package:android_cache_cleaner/domain/repositories/i_cleaning_repository.dart';
 import 'package:injectable/injectable.dart';
-
-import '../../domain/repositories/i_cleaning_repository.dart';
-import '../datasources/native_channel.dart';
 
 @Injectable(as: ICleaningRepository)
 class CleaningRepositoryImpl implements ICleaningRepository {

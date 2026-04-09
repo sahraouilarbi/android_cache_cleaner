@@ -1,9 +1,9 @@
+import 'package:android_cache_cleaner/domain/entities/app_storage_stats.dart';
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/app_storage_stats.dart';
 
 abstract class StorageState extends Equatable {
   const StorageState();
-  
+
   @override
   List<Object?> get props => [];
 }

@@ -1,13 +1,12 @@
+import 'package:android_cache_cleaner/core/di/injection.dart';
+import 'package:android_cache_cleaner/presentation/bloc/cleaning/cleaning_bloc.dart';
+import 'package:android_cache_cleaner/presentation/bloc/cleaning/cleaning_event.dart';
+import 'package:android_cache_cleaner/presentation/bloc/cleaning/cleaning_state.dart';
+import 'package:android_cache_cleaner/presentation/bloc/storage/storage_bloc.dart';
+import 'package:android_cache_cleaner/presentation/bloc/storage/storage_event.dart';
+import 'package:android_cache_cleaner/presentation/bloc/storage/storage_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../core/di/injection.dart';
-import '../bloc/storage/storage_bloc.dart';
-import '../bloc/storage/storage_event.dart';
-import '../bloc/storage/storage_state.dart';
-import '../bloc/cleaning/cleaning_bloc.dart';
-import '../bloc/cleaning/cleaning_event.dart';
-import '../bloc/cleaning/cleaning_state.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -19,9 +18,7 @@ class DashboardPage extends StatelessWidget {
         BlocProvider(
           create: (context) => getIt<StorageBloc>()..add(FetchStorageStats()),
         ),
-        BlocProvider(
-          create: (context) => getIt<CleaningBloc>(),
-        ),
+        BlocProvider(create: (context) => getIt<CleaningBloc>()),
       ],
       child: const DashboardView(),
     );
@@ -35,7 +32,8 @@ class DashboardView extends StatefulWidget {
   State<DashboardView> createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserver {
+class _DashboardViewState extends State<DashboardView>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -87,13 +85,17 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
             );
             context.read<StorageBloc>().add(FetchStorageStats());
           } else if (state is AccessibilityPermissionRequired) {
-             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please enable Accessibility Service to automate cleaning.')),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Please enable Accessibility Service to automate cleaning.',
+                ),
+              ),
             );
           } else if (state is CleaningError) {
-             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${state.message}')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
           }
         },
         child: BlocBuilder<StorageBloc, StorageState>(
@@ -130,10 +132,13 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                               const SizedBox(height: 8),
                               Text(
                                 _formatBytes(state.totalCacheSize),
-                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
+                                style: Theme.of(context).textTheme.displayMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                    ),
                               ),
                             ],
                           ),
@@ -143,7 +148,10 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
                       child: Text(
                         'Top Offenders',
                         style: Theme.of(context).textTheme.titleLarge,
@@ -163,7 +171,9 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                             width: 140,
                             margin: const EdgeInsets.symmetric(horizontal: 8.0),
                             child: Card(
-                              color: Theme.of(context).colorScheme.secondaryContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.secondaryContainer,
                               elevation: 0,
                               child: Padding(
                                 padding: const EdgeInsets.all(12.0),
@@ -171,7 +181,11 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (app.iconBytes != null)
-                                      Image.memory(app.iconBytes!, width: 32, height: 32)
+                                      Image.memory(
+                                        app.iconBytes!,
+                                        width: 32,
+                                        height: 32,
+                                      )
                                     else
                                       const Icon(Icons.android, size: 32),
                                     const SizedBox(height: 8),
@@ -179,15 +193,22 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                                       app.appName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context).textTheme.titleSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       _formatBytes(app.cacheSize),
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.error,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -208,29 +229,35 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
                     ),
                   ),
                   SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final app = apps[index];
-                        return ListTile(
-                          leading: app.iconBytes != null
-                              ? Image.memory(app.iconBytes!, width: 40, height: 40)
-                              : CircleAvatar(
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  child: const Icon(Icons.android),
-                                ),
-                          title: Text(app.appName),
-                          subtitle: Text('App Size: ${_formatBytes(app.totalSize)}'),
-                          trailing: Text(
-                            _formatBytes(app.cacheSize),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                          ),
-                        );
-                      },
-                      childCount: apps.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final app = apps[index];
+                      return ListTile(
+                        leading: app.iconBytes != null
+                            ? Image.memory(
+                                app.iconBytes!,
+                                width: 40,
+                                height: 40,
+                              )
+                            : CircleAvatar(
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                child: const Icon(Icons.android),
+                              ),
+                        title: Text(app.appName),
+                        subtitle: Text(
+                          'App Size: ${_formatBytes(app.totalSize)}',
+                        ),
+                        trailing: Text(
+                          _formatBytes(app.cacheSize),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      );
+                    }, childCount: apps.length),
                   ),
                   // Bottom padding for FAB
                   const SliverToBoxAdapter(child: SizedBox(height: 80)),

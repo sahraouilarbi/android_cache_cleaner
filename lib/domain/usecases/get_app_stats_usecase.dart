@@ -1,7 +1,6 @@
+import 'package:android_cache_cleaner/domain/entities/app_storage_stats.dart';
+import 'package:android_cache_cleaner/domain/repositories/i_storage_repository.dart';
 import 'package:injectable/injectable.dart';
-
-import '../entities/app_storage_stats.dart';
-import '../repositories/i_storage_repository.dart';
 
 @injectable
 class GetAppStatsUseCase {
