@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.RequiresApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -80,38 +81,63 @@ class MainActivity: FlutterActivity() {
     private fun getAppStats(): List<Map<String, Any>> {
         val statsManager = getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
         val pm = packageManager
-        val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        
+        val apps = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        }
+
         val result = mutableListOf<Map<String, Any>>()
 
         for (app in apps) {
-            if ((app.flags and ApplicationInfo.FLAG_SYSTEM) != 0) continue // Skip system apps
+            // Filter out system apps that are not updated (original system apps)
+            // We usually only want to clean third-party apps or system apps that the user actually uses
+            val isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            val isUpdatedSystemApp = (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            
+            if (isSystemApp && !isUpdatedSystemApp) continue 
+            if (app.packageName == packageName) continue // Skip ourselves
             
             try {
                 val stats = statsManager.queryStatsForUid(app.storageUuid, app.uid)
                 val cacheSize = stats.cacheBytes
+                
+                // Only include apps with some cache or relevant size
+                if (cacheSize <= 0) continue
+
                 val dataSize = stats.dataBytes
                 val apkSize = stats.appBytes
                 
                 val iconBytes = try {
-                    val iconDrawable = pm.getApplicationIcon(app)
+                    val iconDrawable = app.loadIcon(pm)
                     getIconByteArray(iconDrawable)
                 } catch (e: Exception) {
                     null
                 }
 
-                result.add(mapOf(
+                val appMap = mutableMapOf<String, Any>(
                     "packageName" to app.packageName,
                     "appName" to pm.getApplicationLabel(app).toString(),
                     "cacheSize" to cacheSize,
                     "dataSize" to dataSize,
-                    "apkSize" to apkSize,
-                    "iconBytes" to iconBytes
-                ).filterValues { it != null } as Map<String, Any>)
+                    "apkSize" to apkSize
+                )
+                
+                if (iconBytes != null) {
+                    appMap["iconBytes"] = iconBytes
+                }
+
+                result.add(appMap)
             } catch (e: Exception) {
-                // Handle security exception or UUID errors silently
+                // Some apps might not be accessible or queryable
+                Log.e("CacheFlow", "Error querying stats for ${app.packageName}: ${e.message}")
             }
         }
-        return result
+        
+        // Sort by cache size descending
+        return result.sortedByDescending { it["cacheSize"] as Long }
     }
 
     private fun getIconByteArray(drawable: Drawable): ByteArray {

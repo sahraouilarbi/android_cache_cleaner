@@ -1,0 +1,117 @@
+{
+  "appTitle": "CacheFlow",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Tooltip for the refresh button"
+  },
+  "info": "Info",
+  "@info": {
+    "description": "Tooltip for the info button"
+  },
+  "cacheCleaningCompleted": "Cache cleaning completed!",
+  "@cacheCleaningCompleted": {
+    "description": "Message shown when cache cleaning is finished"
+  },
+  "accessibilityRequired": "Please enable Accessibility Service to automate cleaning.",
+  "@accessibilityRequired": {
+    "description": "Message shown when accessibility permission is needed"
+  },
+  "errorMessage": "Error: {message}",
+  "@errorMessage": {
+    "description": "Generic error message with a placeholder",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "noAppsFound": "No apps found.",
+  "@noAppsFound": {
+    "description": "Message shown when no apps are detected"
+  },
+  "totalCacheSize": "Total Cache Size",
+  "@totalCacheSize": {
+    "description": "Label for the total cache size section"
+  },
+  "topOffenders": "Top Offenders",
+  "@topOffenders": {
+    "description": "Title for the top offenders section"
+  },
+  "allApplications": "All Applications",
+  "@allApplications": {
+    "description": "Title for the all applications list"
+  },
+  "appSize": "App Size: {size}",
+  "@appSize": {
+    "description": "Label showing the size of an app",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "cleanAllCache": "Clean All Cache",
+  "@cleanAllCache": {
+    "description": "Label for the floating action button to clean all cache"
+  },
+  "about": "About",
+  "@about": {
+    "description": "Title for the about page"
+  },
+  "developer": "Developer",
+  "@developer": {
+    "description": "Title for the developer section in about page"
+  },
+  "openSource": "Open Source",
+  "@openSource": {
+    "description": "Title for the open source section in about page"
+  },
+  "sourceCodeGithub": "Source code on GitHub",
+  "@sourceCodeGithub": {
+    "description": "Label for the GitHub link"
+  },
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Label for the privacy policy link"
+  },
+  "version": "Version {version}",
+  "@version": {
+    "description": "Label showing the app version",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appDescription": "CacheFlow is an open-source utility designed to optimize your storage space by intelligently cleaning cache files from your applications.",
+  "@appDescription": {
+    "description": "Short description of the app"
+  },
+  "officialSite": "Official Site",
+  "@officialSite": {
+    "description": "Label for the official website link"
+  },
+  "supportContact": "Support & Contact",
+  "@supportContact": {
+    "description": "Label for the support/contact link"
+  },
+  "contributeToProject": "Contribute to the project",
+  "@contributeToProject": {
+    "description": "Label for the GitHub contribution link"
+  },
+  "openSourceLicenses": "Open Source Licenses",
+  "@openSourceLicenses": {
+    "description": "Label for the open source licenses page link"
+  },
+  "copyright": "© 2026 Larbi Sahraoui. Distributed under GPL v3 license.",
+  "@copyright": {
+    "description": "Copyright notice"
+  },
+  "madeWithLove": "Made with ❤️ by Larbi Sahraoui",
+  "@madeWithLove": {
+    "description": "Footer text"
+  }
+}

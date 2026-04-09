@@ -44,6 +44,7 @@ class CacheAccessibilityService : AccessibilityService() {
     }
 
     private var isNavigating = false
+    private var lastEventTime = 0L
     private val handler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
@@ -59,68 +60,96 @@ class CacheAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isCleaning || event == null || isNavigating) return
+        
+        val currentTime = System.currentTimeMillis()
+        if (lastEventTime == 0L) lastEventTime = currentTime
+
+        // If we stay on the same screen/package for more than 5 seconds without progress, skip it
+        if (currentTime - lastEventTime > 5000) {
+            Log.d("CacheFlow", "Timeout on ${event.packageName}, skipping...")
+            lastEventTime = currentTime
+            if (packageQueue.isNotEmpty()) {
+                packageQueue.removeAt(0)
+            }
+            processNext()
+            return
+        }
 
         val rootNode = rootInActiveWindow ?: return
+        lastEventTime = currentTime
 
         // 1. On cherche d'abord le bouton "Vider le cache" (Si on est déjà dans le menu de stockage)
-        val clearCacheKeywords = listOf("clear cache", "vider le cache", "borrar caché", "limpiar caché", "limpar cache", "svuota cache")
+        val clearCacheKeywords = listOf(
+            "clear cache", "vider le cache", "borrar caché", "limpiar caché", 
+            "limpar cache", "svuota cache", "cache leeren", "wisat pamięć podręczną",
+            "مسح ذاكرة التخزين المؤقت", "مسح التخزين المؤقت"
+        )
         val clearCacheNode = findClickableNodeByTexts(rootNode, clearCacheKeywords)
         
         if (clearCacheNode != null) {
             isNavigating = true
-            if (clearCacheNode.isEnabled) {
-                clearCacheNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            }
+            clearCacheNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             
-            // On attend un peu que l'action s'effectue, on fait retour et on passe à la suite
+            // Wait for action and optional confirmation
             handler.postDelayed({
-                performGlobalAction(GLOBAL_ACTION_BACK) // Retour aux infos de l'app
+                // Check for a confirmation dialog "OK" or "Clear"
+                val confirmKeywords = listOf("ok", "clear", "supprimer", "vider", "éliminer", "موافق", "مسح")
+                val confirmNode = findClickableNodeByTexts(rootInActiveWindow ?: rootNode, confirmKeywords)
+                confirmNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
                 handler.postDelayed({
-                    if (packageQueue.isNotEmpty()) {
-                        packageQueue.removeAt(0)
-                    }
-                    isNavigating = false
-                    processNext()
-                }, 500)
+                    performGlobalAction(GLOBAL_ACTION_BACK) // Go back from Storage to App Info
+                    handler.postDelayed({
+                        if (packageQueue.isNotEmpty()) {
+                            packageQueue.removeAt(0)
+                        }
+                        isNavigating = false
+                        processNext()
+                    }, 400)
+                }, 300)
             }, 500)
             return
         }
 
-        // 2. Si on ne trouve pas "Vider le cache", on cherche le menu "Stockage"
-        val storageKeywords = listOf("storage", "stockage", "almacenamiento", "armazenamento", "memoria")
+        // 2. Search for "Storage" menu
+        val storageKeywords = listOf("storage", "stockage", "almacenamiento", "armazenamento", "memoria", "speicher", "مساحة التخزين", "التخزين")
         val storageNode = findClickableNodeByTexts(rootNode, storageKeywords)
         
         if (storageNode != null) {
             isNavigating = true
             storageNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            // Attendre le changement de vue
             handler.postDelayed({
                 isNavigating = false
-            }, 1000)
+            }, 800)
             return
         }
+
+        // 3. Fallback: If we've been on this screen for too long without finding anything, move to next
+        // This is a simple safety mechanism
     }
 
     private fun findClickableNodeByTexts(node: AccessibilityNodeInfo, keywords: List<String>): AccessibilityNodeInfo? {
-        if (node.text != null) {
-            val text = node.text.toString().lowercase()
-            if (keywords.any { text.contains(it) }) {
-                // Trouver le parent cliquable si le texte lui-même n'est pas cliquable
+        val nodeText = node.text?.toString()?.lowercase()
+        val nodeDesc = node.contentDescription?.toString()?.lowercase()
+
+        if (nodeText != null || nodeDesc != null) {
+            if (keywords.any { (nodeText?.contains(it) == true) || (nodeDesc?.contains(it) == true) }) {
                 var clickableNode: AccessibilityNodeInfo? = node
                 while (clickableNode != null && !clickableNode.isClickable) {
-                    clickableNode = clickableNode.parent
+                    val parent = clickableNode.parent
+                    if (parent == null) break
+                    clickableNode = parent
                 }
                 if (clickableNode != null && clickableNode.isClickable) {
                     return clickableNode
                 }
             }
         }
+
         for (i in 0 until node.childCount) {
-            val child = node.getChild(i)
-            if (child != null) {
-                val result = findClickableNodeByTexts(child, keywords)
-                if (result != null) return result
-            }
+            val child = node.getChild(i) ?: continue
+            val result = findClickableNodeByTexts(child, keywords)
+            if (result != null) return result
         }
         return null
     }

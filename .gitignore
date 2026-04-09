@@ -45,6 +45,6 @@ app.*.map.json
 /android/app/release
 
 # Ressources
-.superpowers/
+docs/
 nanobanana-output/
 ressources/

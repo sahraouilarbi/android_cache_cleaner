@@ -5,8 +5,10 @@ import 'package:android_cache_cleaner/presentation/bloc/cleaning/cleaning_state.
 import 'package:android_cache_cleaner/presentation/bloc/storage/storage_bloc.dart';
 import 'package:android_cache_cleaner/presentation/bloc/storage/storage_event.dart';
 import 'package:android_cache_cleaner/presentation/bloc/storage/storage_state.dart';
+import 'package:android_cache_cleaner/presentation/pages/about_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:android_cache_cleaner/l10n/generated/app_localizations.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -65,14 +67,26 @@ class _DashboardViewState extends State<DashboardView>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CacheFlow'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () {
               context.read<StorageBloc>().add(FetchStorageStats());
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: l10n.info,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutPage()),
+              );
             },
           ),
         ],
@@ -81,21 +95,21 @@ class _DashboardViewState extends State<DashboardView>
         listener: (context, state) {
           if (state is CleaningSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cache cleaning completed!')),
+              SnackBar(content: Text(l10n.cacheCleaningCompleted)),
             );
             context.read<StorageBloc>().add(FetchStorageStats());
           } else if (state is AccessibilityPermissionRequired) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Please enable Accessibility Service to automate cleaning.',
-                ),
+              SnackBar(
+                content: Text(l10n.accessibilityRequired),
               ),
             );
           } else if (state is CleaningError) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
+            ).showSnackBar(
+              SnackBar(content: Text(l10n.errorMessage(state.message))),
+            );
           }
         },
         child: BlocBuilder<StorageBloc, StorageState>(
@@ -103,11 +117,11 @@ class _DashboardViewState extends State<DashboardView>
             if (state is StorageLoading || state is StorageInitial) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is StorageError) {
-              return Center(child: Text('Error: ${state.message}'));
+              return Center(child: Text(l10n.errorMessage(state.message)));
             } else if (state is StorageLoaded) {
               final apps = state.apps;
               if (apps.isEmpty) {
-                return const Center(child: Text('No apps found.'));
+                return Center(child: Text(l10n.noAppsFound));
               }
 
               final topOffenders = apps.take(3).toList();
@@ -118,7 +132,6 @@ class _DashboardViewState extends State<DashboardView>
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Card(
-                        elevation: 0,
                         color: Theme.of(context).colorScheme.primaryContainer,
                         child: Padding(
                           padding: const EdgeInsets.all(24.0),
@@ -126,7 +139,7 @@ class _DashboardViewState extends State<DashboardView>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Total Cache Size',
+                                l10n.totalCacheSize,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
@@ -153,14 +166,14 @@ class _DashboardViewState extends State<DashboardView>
                         vertical: 8.0,
                       ),
                       child: Text(
-                        'Top Offenders',
+                        l10n.topOffenders,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
                   ),
                   SliverToBoxAdapter(
                     child: SizedBox(
-                      height: 120,
+                      height: 150,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -174,7 +187,6 @@ class _DashboardViewState extends State<DashboardView>
                               color: Theme.of(
                                 context,
                               ).colorScheme.secondaryContainer,
-                              elevation: 0,
                               child: Padding(
                                 padding: const EdgeInsets.all(12.0),
                                 child: Column(
@@ -223,7 +235,7 @@ class _DashboardViewState extends State<DashboardView>
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        'All Applications',
+                        l10n.allApplications,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
@@ -246,7 +258,7 @@ class _DashboardViewState extends State<DashboardView>
                               ),
                         title: Text(app.appName),
                         subtitle: Text(
-                          'App Size: ${_formatBytes(app.totalSize)}',
+                          l10n.appSize(_formatBytes(app.totalSize)),
                         ),
                         trailing: Text(
                           _formatBytes(app.cacheSize),
@@ -280,7 +292,7 @@ class _DashboardViewState extends State<DashboardView>
                 context.read<CleaningBloc>().add(StartCleaning(targetPackages));
               },
               icon: const Icon(Icons.cleaning_services),
-              label: const Text('Clean All Cache'),
+              label: Text(l10n.cleanAllCache),
             );
           }
           return const SizedBox.shrink();
