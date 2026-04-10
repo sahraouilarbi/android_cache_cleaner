@@ -4,8 +4,10 @@ import android.accessibilityservice.AccessibilityService
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -14,146 +16,256 @@ import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.annotation.MainThread
 import androidx.core.app.NotificationCompat
+import java.util.ArrayDeque
 
 class CacheAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "cacheflow_cleaning_channel"
+        const val ACTION_START_CLEANING = "com.sahraouilarbi.cacheflow.START_CLEANING"
+        const val EXTRA_PACKAGES = "extra_packages"
         
-        var instance: CacheAccessibilityService? = null
-        private val packageQueue = mutableListOf<String>()
-        var isCleaning = false
-
-        fun startCleaning(packages: List<String>) {
-            packageQueue.clear()
-            packageQueue.addAll(packages)
-            isCleaning = true
-            instance?.showNotification()
-            processNext()
-        }
-
-        private fun processNext() {
-            if (packageQueue.isEmpty()) {
-                isCleaning = false
-                instance?.stopForeground(true)
-                // Relancer l'application une fois le nettoyage terminé
-                val intent = instance?.packageManager?.getLaunchIntentForPackage("com.sahraouilarbi.android_cache_cleaner")
-                intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                instance?.startActivity(intent)
-                return
-            }
-
-            val pkg = packageQueue[0]
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:$pkg")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-            }
-            instance?.startActivity(intent)
-        }
+        private val PACKAGE_NAME_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$")
     }
 
-    private val ALLOWED_PACKAGES = setOf("com.android.settings", "com.google.android.settings")
+    private val packageQueue = ArrayDeque<String>()
+    private var isCleaning = false
     private var isNavigating = false
     private var lastEventTime = 0L
     private val handler = Handler(Looper.getMainLooper())
+    private var pollingRunnable: Runnable? = null
+
+    private val cleaningReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_START_CLEANING) {
+                val packages = intent.getStringArrayListExtra(EXTRA_PACKAGES)
+                if (packages != null) {
+                    startCleaningSession(packages)
+                }
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val filter = IntentFilter(ACTION_START_CLEANING)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(cleaningReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(cleaningReceiver, filter)
+        }
+    }
+
+    override fun onDestroy() {
+        unregisterReceiver(cleaningReceiver)
+        stopPolling()
+        super.onDestroy()
+    }
+
+    @MainThread
+    private fun startCleaningSession(packages: List<String>) {
+        packageQueue.clear()
+        packageQueue.addAll(packages)
+        isCleaning = true
+        showNotification()
+        startPolling()
+        processNext()
+    }
+
+    @MainThread
+    private fun processNext() {
+        if (packageQueue.isEmpty()) {
+            isCleaning = false
+            stopPolling()
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+
+            // Relancer l'application une fois le nettoyage terminé
+            val intent = packageManager.getLaunchIntentForPackage(packageName)
+            intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(intent)
+            return
+        }
+
+        val pkg = packageQueue.peekFirst()
+        // SECURITY: Validate package name before building URI and starting activity
+        if (pkg == null || !PACKAGE_NAME_REGEX.matches(pkg)) {
+            packageQueue.removeFirst()
+            processNext()
+            return
+        }
+
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:$pkg")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+        }
+        startActivity(intent)
+    }
+
+    private val ALLOWED_PACKAGES = setOf(
+        "com.android.settings", 
+        "com.google.android.settings",
+        "com.samsung.android.settings",
+        "com.miui.securitycenter",
+        "com.coloros.safecenter",
+        "com.oplus.settings",
+        "com.oppo.settings",
+        "com.vivo.settings"
+    )
+
+    private val STORAGE_MENU_IDS = listOf(
+        "com.android.settings:id/storage_settings",
+        "com.android.settings:id/storage_menu_item"
+    )
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
         createNotificationChannel()
-        Log.d("CacheFlowAccessibility", "Accessibility Service Connected")
+        if (BuildConfig.DEBUG) {
+            Log.d("CacheFlowAccessibility", "Accessibility Service Connected")
+        }
     }
 
-    override fun onUnbind(intent: Intent?): Boolean {
-        instance = null
-        return super.onUnbind(intent)
+    private fun startPolling() {
+        stopPolling()
+        pollingRunnable = object : Runnable {
+            override fun run() {
+                if (isCleaning && !isNavigating) {
+                    val root = rootInActiveWindow
+                    if (root != null) {
+                        scanAndClick(root)
+                    }
+                }
+                if (isCleaning) {
+                    handler.postDelayed(this, 500)
+                }
+            }
+        }
+        handler.post(pollingRunnable!!)
+    }
+
+    private fun stopPolling() {
+        pollingRunnable?.let { handler.removeCallbacks(it) }
+        pollingRunnable = null
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // SECURITY: Prohibit logging of any accessibility event content (event.text, etc.)
-        // to prevent exfiltration of sensitive user data.
-        
         if (!isCleaning || event == null || isNavigating) return
         
-        // SECURITY: Strict package whitelist to prevent the service from interacting
-        // with apps other than the system settings.
         val eventPackage = event.packageName?.toString()
         if (eventPackage !in ALLOWED_PACKAGES) return
 
-        // SECURITY: Filter event types to the bare minimum required for automation.
         val allowedEventTypes = setOf(
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
         )
         if (event.eventType !in allowedEventTypes) return
         
+        val rootNode = rootInActiveWindow ?: return
+        scanAndClick(rootNode)
+    }
+
+    private fun scanAndClick(rootNode: AccessibilityNodeInfo) {
+        if (isNavigating) return
+
         val currentTime = System.currentTimeMillis()
         if (lastEventTime == 0L) lastEventTime = currentTime
 
-        // If we stay on the same screen/package for more than 5 seconds without progress, skip it
-        if (currentTime - lastEventTime > 5000) {
-            Log.d("CacheFlow", "Timeout on ${event.packageName}, skipping...")
+        if (currentTime - lastEventTime > 7000) {
             lastEventTime = currentTime
             if (packageQueue.isNotEmpty()) {
-                packageQueue.removeAt(0)
+                packageQueue.removeFirst()
             }
             processNext()
             return
         }
-
-        val rootNode = rootInActiveWindow ?: return
+        
         lastEventTime = currentTime
 
-        // 1. On cherche d'abord le bouton "Vider le cache" (Si on est déjà dans le menu de stockage)
+        if (BuildConfig.DEBUG) {
+            Log.d("CacheFlowDebug", "Scanning window...")
+        }
+
         val clearCacheKeywords = listOf(
-            "clear cache", "vider le cache", "borrar caché", "limpiar caché", 
+            "clear cache", "vider le cache", "effacer le cache", "borrar caché", "limpiar caché", 
             "limpar cache", "svuota cache", "cache leeren", "wisat pamięć podręczną",
             "مسح ذاكرة التخزين المؤقت", "مسح التخزين المؤقت"
         )
+        
         val clearCacheNode = findClickableNodeByTexts(rootNode, clearCacheKeywords)
         
         if (clearCacheNode != null) {
+            if (!clearCacheNode.isEnabled) {
+                isNavigating = true
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                handler.postDelayed({
+                    if (packageQueue.isNotEmpty()) packageQueue.removeFirst()
+                    isNavigating = false
+                    processNext()
+                }, 400)
+                return
+            }
+
             isNavigating = true
             clearCacheNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             
-            // Wait for action and optional confirmation
             handler.postDelayed({
-                // Check for a confirmation dialog "OK" or "Clear"
-                val confirmKeywords = listOf("ok", "clear", "supprimer", "vider", "éliminer", "موافق", "مسح")
-                val confirmNode = findClickableNodeByTexts(rootInActiveWindow ?: rootNode, confirmKeywords)
+                val confirmKeywords = listOf("ok", "clear", "supprimer", "vider", "effacer", "éliminer", "موافق", "مسح")
+                val confirmNode = findNodeByIds(rootInActiveWindow ?: rootNode, listOf("android:id/button1"))
+                    ?: findClickableNodeByTexts(rootInActiveWindow ?: rootNode, confirmKeywords)
+                
                 confirmNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
                 handler.postDelayed({
-                    performGlobalAction(GLOBAL_ACTION_BACK) // Go back from Storage to App Info
+                    performGlobalAction(GLOBAL_ACTION_BACK)
                     handler.postDelayed({
-                        if (packageQueue.isNotEmpty()) {
-                            packageQueue.removeAt(0)
-                        }
+                        if (packageQueue.isNotEmpty()) packageQueue.removeFirst()
                         isNavigating = false
                         processNext()
-                    }, 400)
-                }, 300)
-            }, 500)
+                    }, 500)
+                }, 400)
+            }, 600)
             return
         }
 
-        // 2. Search for "Storage" menu
-        val storageKeywords = listOf("storage", "stockage", "almacenamiento", "armazenamento", "memoria", "speicher", "مساحة التخزين", "التخزين")
-        val storageNode = findClickableNodeByTexts(rootNode, storageKeywords)
+        val storageKeywords = listOf("storage", "stockage", "utilisation du stockage", "almacenamiento", "armazenamento", "memoria", "speicher", "مساحة التخزين", "التخزين")
+        val storageNode = findNodeByIds(rootNode, STORAGE_MENU_IDS)
+            ?: findClickableNodeByTexts(rootNode, storageKeywords)
         
         if (storageNode != null) {
             isNavigating = true
             storageNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             handler.postDelayed({
                 isNavigating = false
-            }, 800)
+            }, 150)
             return
         }
+    }
 
-        // 3. Fallback: If we've been on this screen for too long without finding anything, move to next
-        // This is a simple safety mechanism
+    private fun findNodeByIds(rootNode: AccessibilityNodeInfo, ids: List<String>): AccessibilityNodeInfo? {
+        for (id in ids) {
+            val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
+            if (nodes != null && nodes.isNotEmpty()) {
+                for (node in nodes) {
+                    if (node.isEnabled) {
+                        var clickableNode = node
+                        while (clickableNode != null && !clickableNode.isClickable) {
+                            clickableNode = clickableNode.parent ?: break
+                        }
+                        if (clickableNode?.isClickable == true) return clickableNode
+                    }
+                }
+            }
+        }
+        return null
     }
 
     private fun findClickableNodeByTexts(node: AccessibilityNodeInfo, keywords: List<String>): AccessibilityNodeInfo? {
@@ -164,8 +276,7 @@ class CacheAccessibilityService : AccessibilityService() {
             if (keywords.any { (nodeText?.contains(it) == true) || (nodeDesc?.contains(it) == true) }) {
                 var clickableNode: AccessibilityNodeInfo? = node
                 while (clickableNode != null && !clickableNode.isClickable) {
-                    val parent = clickableNode.parent
-                    if (parent == null) break
+                    val parent = clickableNode.parent ?: break
                     clickableNode = parent
                 }
                 if (clickableNode != null && clickableNode.isClickable) {
@@ -183,10 +294,15 @@ class CacheAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Log.d("CacheFlowAccessibility", "Service Interrupted")
         isCleaning = false
         isNavigating = false
-        stopForeground(true)
+        stopPolling()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
     }
 
     private fun createNotificationChannel() {
@@ -207,7 +323,7 @@ class CacheAccessibilityService : AccessibilityService() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("CacheFlow")
             .setContentText("Nettoyage automatique en cours...")
-            .setSmallIcon(android.R.drawable.ic_menu_delete) // Temporary icon
+            .setSmallIcon(R.mipmap.ic_launcher) // Professional icon from resources
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()

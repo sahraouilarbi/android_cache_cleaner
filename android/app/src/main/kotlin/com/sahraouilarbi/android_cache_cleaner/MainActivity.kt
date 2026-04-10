@@ -90,7 +90,7 @@ class MainActivity: FlutterActivity() {
                             return@setMethodCallHandler
                         }
 
-                        // SECURITY: Validate package names for accessibility queue as well
+                        // SECURITY: Validate package names for accessibility queue
                         for (pkg in packages) {
                             if (!PACKAGE_NAME_REGEX.matches(pkg)) {
                                 result.error("SECURITY_ERROR", "Invalid package name format", null)
@@ -99,7 +99,12 @@ class MainActivity: FlutterActivity() {
                         }
 
                         if (isAccessibilityEnabled()) {
-                            CacheAccessibilityService.startCleaning(packages)
+                            // Use Broadcast instead of static instance for better architecture
+                            val intent = Intent(CacheAccessibilityService.ACTION_START_CLEANING).apply {
+                                `package` = packageName
+                                putStringArrayListExtra(CacheAccessibilityService.EXTRA_PACKAGES, ArrayList(packages))
+                            }
+                            sendBroadcast(intent)
                             result.success(true)
                         } else {
                             result.success(false)
@@ -111,6 +116,7 @@ class MainActivity: FlutterActivity() {
                 }
             } catch (e: Exception) {
                 // SECURITY: Catch all exceptions to prevent internal info leakage
+                Log.e("CacheFlow", "Native exception caught: ${e.message}", e)
                 result.error("UNEXPECTED_ERROR", "An unexpected error occurred in native code", null)
             }
         }
