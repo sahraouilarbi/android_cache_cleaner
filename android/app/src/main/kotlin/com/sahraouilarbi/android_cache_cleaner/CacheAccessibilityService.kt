@@ -18,9 +18,13 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.MainThread
 import androidx.core.app.NotificationCompat
+import android.content.pm.ApplicationInfo
 import java.util.ArrayDeque
 
 class CacheAccessibilityService : AccessibilityService() {
+
+    private val isDebugMode: Boolean
+        get() = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     companion object {
         private const val NOTIFICATION_ID = 1001
@@ -129,7 +133,7 @@ class CacheAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         createNotificationChannel()
-        if (BuildConfig.DEBUG) {
+        if (isDebugMode) {
             Log.d("CacheFlowAccessibility", "Accessibility Service Connected")
         }
     }
@@ -190,7 +194,7 @@ class CacheAccessibilityService : AccessibilityService() {
         
         lastEventTime = currentTime
 
-        if (BuildConfig.DEBUG) {
+        if (isDebugMode) {
             Log.d("CacheFlowDebug", "Scanning window...")
         }
 
