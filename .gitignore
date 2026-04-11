@@ -33,6 +33,23 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Temporary and Debugging files
+view.xml
+*.log
+
+# Generated Plugin Files
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Dependency Locks (Platform specific)
+ios/Podfile.lock
+macos/Podfile.lock
+
 # Symbolication related
 app.*.symbols
 
