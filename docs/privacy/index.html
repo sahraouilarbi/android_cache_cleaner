@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - CacheFlow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { color: #005F73; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #1A80E6; margin-top: 30px; }
+        p { margin-bottom: 15px; }
+        .date { font-style: italic; color: #666; margin-bottom: 30px; }
+        .highlight { background-color: #e8f4f8; padding: 10px; border-left: 4px solid #1A80E6; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Policy</h1>
+        <p class="date">Last updated: April 10, 2026</p>
+
+        <p>This Privacy Policy describes how your personal information is collected, used, and shared when you use the <strong>CacheFlow</strong> mobile application (the "App"), developed by Larbi Sahraoui.</p>
+
+        <div class="highlight">
+            <strong>TL;DR:</strong> CacheFlow is a 100% offline, local-only utility. We do not collect, store, transmit, or share any of your personal data. What happens on your device stays on your device.
+        </div>
+
+        <h2>1. Data Collection and Usage</h2>
+        <p>CacheFlow is designed to analyze your device's storage and automate the cleaning of application caches. To provide this functionality, the App requests specific device permissions. However, the data accessed via these permissions is processed <strong>strictly locally</strong> on your device.</p>
+        
+        <h3>1.1 Usage Data (Storage Stats)</h3>
+        <p>The App requests the <code>PACKAGE_USAGE_STATS</code> and <code>QUERY_ALL_PACKAGES</code> permissions to calculate the cache, data, and APK sizes of installed applications. This information is used solely to display storage statistics within the App's dashboard and to identify applications that can be cleaned. This data is never logged, saved permanently, or transmitted to any external server.</p>
+
+        <h3>1.2 Accessibility Service Data</h3>
+        <p>The App uses an <code>AccessibilityService</code> to automate the process of navigating Android system settings and clicking the "Clear Cache" button on your behalf (Non-Root mode). This service is strictly limited to interacting with system settings packages (e.g., <code>com.android.settings</code>).</p>
+        <p><strong>Crucially:</strong> The Accessibility Service does not read your screen content outside of the settings app, does not log your keystrokes, and does not capture sensitive information like passwords or personal messages. All accessibility events are processed instantly in memory and discarded.</p>
+
+        <h2>2. Data Sharing and Disclosure</h2>
+        <p>Because we do not collect any data, <strong>we do not share or disclose any data to third parties</strong>. There are no advertising trackers, analytics SDKs (like Firebase or Crashlytics), or third-party data collection modules integrated into CacheFlow.</p>
+
+        <h2>3. Data Security</h2>
+        <p>The security of your device is our priority. By keeping all processing local and offline, CacheFlow eliminates the risk of data breaches associated with network transmissions. The App is entirely open-source, meaning the codebase is publicly auditable for security and privacy compliance.</p>
+
+        <h2>4. Changes to This Privacy Policy</h2>
+        <p>We may update this Privacy Policy from time to time in order to reflect changes to our practices or for other operational, legal, or regulatory reasons. If significant changes are made, we will update the "Last updated" date at the top of this policy.</p>
+
+        <h2>5. Contact Us</h2>
+        <p>If you have questions or concerns about this Privacy Policy or our privacy practices, please contact us by e-mail at: <a href="mailto:contact@sahraouilarbi.com">contact@sahraouilarbi.com</a>.</p>
+    </div>
+</body>
+</html>
